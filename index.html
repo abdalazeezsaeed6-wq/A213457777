@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>نظام الإدارة - تسجيل الدخول</title>
+    <title>نظام الإدارة - تعدد المستخدمين</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; }
@@ -15,46 +15,44 @@
         .green { background: #28a745; color: white; }
         .red { background: #dc3545; color: white; }
         .gray { background: #6c757d; color: white; }
-        button:hover { opacity: 0.85; transform: translateY(-1px); }
         .hidden { display: none !important; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #eee; padding: 12px; text-align: center; }
-        th { background: #0d6efd; color: white; }
-        .shop-item { border-bottom: 1px solid #eee; padding: 15px 0; }
-        #loginError { color: #dc3545; text-align: center; margin-top: 10px; font-weight: bold; }
-        .nav-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        th, td { border: 1px solid #eee; padding: 10px; text-align: center; }
+        .user-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
     </style>
 </head>
 <body>
 
 <div id="loginPage" class="card">
-    <h2>قفل النظام</h2>
+    <h2>تسجيل دخول المستخدمين</h2>
     <input type="text" id="loginUser" placeholder="اسم المستخدم">
     <input type="password" id="loginPass" placeholder="كلمة المرور">
-    <button class="blue" onclick="checkLogin()">دخول للنظام</button>
-    <div id="loginError" class="hidden">خطأ في اسم المستخدم أو كلمة المرور!</div>
+    <button class="blue" onclick="checkLogin()">دخول</button>
+    <div id="loginError" class="hidden" style="color:red; text-align:center; margin-top:10px;">بيانات الدخول غير صحيحة!</div>
 </div>
 
 <div id="mainContent" class="hidden" style="width: 100%; max-width: 800px;">
     
     <div id="menu" class="card">
-        <h2>لوحة التحكم الإدارية</h2>
-        <div class="nav-buttons">
+        <h2 id="welcomeMsg">مرحباً بك</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
             <button class="blue" onclick="show('entry')">إدخال فواتير</button>
             <button class="blue" onclick="show('viewPage')">عرض الكشوفات</button>
             <button class="blue" onclick="show('shopsPage');loadShops();">المحلات</button>
-            <button class="gray" onclick="show('settingsPage')">الإعدادات</button>
+            <button class="gray" onclick="show('usersAdminPage');loadUsers();">إدارة المستخدمين</button>
         </div>
-        <button class="red" onclick="deleteAll()" style="margin-top: 30px;">مسح كافة الفواتير</button>
+        <button class="red" onclick="deleteAll()" style="margin-top: 20px;">مسح كافة الفواتير</button>
         <button style="background:#333; color:white;" onclick="location.reload()">تسجيل خروج</button>
     </div>
 
-    <div id="settingsPage" class="card hidden">
-        <h3>تغيير بيانات الدخول</h3>
-        <p style="font-size: 0.8em; color: #666;">سيتم حفظ هذه البيانات في السيرفر للمرات القادمة.</p>
+    <div id="usersAdminPage" class="card hidden">
+        <h3>إضافة مستخدم جديد</h3>
         <input id="newUserName" placeholder="اسم المستخدم الجديد">
-        <input type="password" id="newUserPass" placeholder="كلمة المرور الجديدة">
-        <button class="green" onclick="updateAdminData()">حفظ التعديلات</button>
+        <input type="password" id="newUserPass" placeholder="كلمة المرور">
+        <button class="green" onclick="addUser()">إضافة المستخدم</button>
+        <hr>
+        <h3>المستخدمين الحاليين</h3>
+        <div id="usersList"></div>
         <button class="gray" onclick="show('menu')">رجوع</button>
     </div>
 
@@ -62,7 +60,6 @@
         <h3>رفع البيانات</h3>
         <button class="blue" onclick="document.getElementById('excel').click()">رفع ملف Excel</button>
         <input type="file" id="excel" class="hidden" accept=".xlsx,.xls" onchange="uploadExcel(event)">
-        <p id="uploadStatus" style="text-align:center; color: #28a745;"></p>
         <button class="green" onclick="show('manual')">إدخال يدوي</button>
         <button class="gray" onclick="show('menu')">رجوع</button>
     </div>
@@ -77,7 +74,7 @@
         <input id="id" placeholder="رقم المشترك">
         <input id="name" placeholder="اسم المشترك">
         <input id="amount" placeholder="المبلغ">
-        <button class="green" onclick="saveBill()">حفظ الآن</button>
+        <button class="green" onclick="saveBill()">حفظ</button>
         <button class="gray" onclick="show('entry')">رجوع</button>
     </div>
 
@@ -88,11 +85,11 @@
         <button class="gray" onclick="show('menu')">رجوع</button>
     </div>
 
-    <div id="tablePage" class="card hidden" style="max-width: 1000px;">
-        <h3>البيانات المستعلمة</h3>
-        <input id="search" placeholder="بحث سريع..." onkeyup="searchTable()">
+    <div id="tablePage" class="card hidden">
+        <h3>البيانات</h3>
+        <input id="search" placeholder="بحث..." onkeyup="searchTable()">
         <div style="overflow-x: auto;">
-            <table id="mainTable">
+            <table>
                 <thead><tr><th>الفرع</th><th>الرقم</th><th>الاسم</th><th>المبلغ</th></tr></thead>
                 <tbody id="tableBody"></tbody>
             </table>
@@ -101,65 +98,82 @@
     </div>
 
     <div id="shopsPage" class="card hidden">
-        <h3>إدارة المحلات</h3>
-        <input id="shopName" placeholder="اسم المحل">
-        <input id="shopPhone" placeholder="الجوال">
-        <input id="shopLink" placeholder="رابط الخرائط">
-        <button class="green" onclick="saveShop()">إضافة المحل</button>
+        <h3>المحلات</h3>
+        <input id="shopName" placeholder="اسم المحل"><input id="shopPhone" placeholder="الجوال">
+        <button class="green" onclick="saveShop()">إضافة</button>
         <div id="shopsList"></div>
         <button class="gray" onclick="show('menu')">رجوع</button>
     </div>
-
 </div>
 
 <script>
     const DB = "https://question-738f7-default-rtdb.firebaseio.com";
-    
-    // القيم الافتراضية الأولية
-    let adminData = { user: "عبدالعزيز", pass: "12345" };
+    let allUsers = {};
 
-    // تحميل الإعدادات من السيرفر فوراً
+    // تحميل قائمة المستخدمين عند فتح الصفحة
     async function init() {
         try {
-            const res = await fetch(`${DB}/AdminConfig.json`);
-            const data = await res.json();
-            if (data && data.user) adminData = data;
-        } catch(e) { console.log("Using local defaults"); }
+            const res = await fetch(`${DB}/Users.json`);
+            allUsers = await res.json() || {};
+            // إذا كانت القاعدة فارغة تماماً، ننشئ المستخدم الافتراضي
+            if (Object.keys(allUsers).length === 0) {
+                allUsers["عبدالعزيز"] = { pass: "12345" };
+            }
+        } catch(e) { console.error("Error loading users"); }
     }
     init();
 
     function checkLogin() {
         const u = document.getElementById("loginUser").value.trim();
         const p = document.getElementById("loginPass").value.trim();
-        const err = document.getElementById("loginError");
-
-        if (u === adminData.user && p === adminData.pass) {
+        
+        if (allUsers[u] && allUsers[u].pass === p) {
+            document.getElementById("welcomeMsg").innerText = "مرحباً: " + u;
             document.getElementById("loginPage").classList.add("hidden");
             document.getElementById("mainContent").classList.remove("hidden");
         } else {
-            err.classList.remove("hidden");
+            document.getElementById("loginError").classList.remove("hidden");
         }
     }
 
-    async function updateAdminData() {
+    async function addUser() {
         const u = document.getElementById("newUserName").value.trim();
         const p = document.getElementById("newUserPass").value.trim();
-        if(!u || !p) { alert("أدخل البيانات الجديدة أولاً"); return; }
+        if(!u || !p) return alert("أدخل البيانات");
 
-        if(confirm("هل تريد اعتماد اسم المستخدم وكلمة المرور الجديدة؟")) {
-            await fetch(`${DB}/AdminConfig.json`, {
-                method: "PUT",
-                body: JSON.stringify({ user: u, pass: p })
-            });
-            alert("تم التحديث! سيتم الخروج لتجربة البيانات الجديدة.");
-            location.reload();
+        allUsers[u] = { pass: p };
+        await fetch(`${DB}/Users/${u}.json`, {
+            method: "PUT",
+            body: JSON.stringify({ pass: p })
+        });
+        alert("تم إضافة المستخدم بنجاح");
+        loadUsers();
+    }
+
+    async function loadUsers() {
+        const res = await fetch(`${DB}/Users.json`);
+        allUsers = await res.json() || {};
+        const list = document.getElementById("usersList");
+        list.innerHTML = "";
+        for(let user in allUsers) {
+            list.innerHTML += `<div class="user-item">
+                <span>👤 ${user}</span>
+                <button class="red" style="width:70px; margin:0;" onclick="deleteUser('${user}')">حذف</button>
+            </div>`;
         }
     }
 
+    async function deleteUser(user) {
+        if(user === "عبدالعزيز") return alert("لا يمكن حذف المستخدم الرئيسي");
+        if(confirm(`حذف المستخدم ${user}؟`)) {
+            await fetch(`${DB}/Users/${user}.json`, { method: "DELETE" });
+            loadUsers();
+        }
+    }
+
+    // --- بقية الدوال الوظيفية ---
     function show(id) {
-        document.querySelectorAll('.card').forEach(c => {
-            if(c.id !== "loginPage") c.classList.add("hidden");
-        });
+        document.querySelectorAll('.card').forEach(c => { if(c.id !== "loginPage") c.classList.add("hidden"); });
         document.getElementById(id).classList.remove("hidden");
         if(id === 'manual') updateBranch();
     }
@@ -173,24 +187,14 @@
     }
 
     async function saveBill() {
-        const t = document.getElementById("type").value;
-        const b = document.getElementById("branch").value;
-        const id = document.getElementById("id").value.trim();
-        const n = document.getElementById("name").value.trim();
-        const a = document.getElementById("amount").value.trim();
+        const t = document.getElementById("type").value, b = document.getElementById("branch").value, id = document.getElementById("id").value.trim(), n = document.getElementById("name").value.trim(), a = document.getElementById("amount").value.trim();
         if(!id || !n) return alert("أكمل البيانات");
-
-        await fetch(`${DB}/Bills/${t}/${b}/${id}.json`, {
-            method: "PUT",
-            body: JSON.stringify({ customerName: n, amount: a })
-        });
-        alert("تم الحفظ بنجاح");
+        await fetch(`${DB}/Bills/${t}/${b}/${id}.json`, { method: "PUT", body: JSON.stringify({ customerName: n, amount: a }) });
+        alert("تم الحفظ");
     }
 
     async function uploadExcel(e) {
-        const file = e.target.files[0];
-        if(!file) return;
-        document.getElementById("uploadStatus").innerText = "جاري المعالجة...";
+        const file = e.target.files[0]; if(!file) return;
         const reader = new FileReader();
         reader.onload = async (ev) => {
             const data = new Uint8Array(ev.target.result);
@@ -199,12 +203,9 @@
             for(let r of rows) {
                 if(!r[2]) continue;
                 let type = r[0]?.toString().includes("كهرباء") ? "Electricity" : "Water";
-                await fetch(`${DB}/Bills/${type}/${r[1]}/${r[2]}.json`, {
-                    method: "PUT", body: JSON.stringify({ customerName: r[4]||"بدون اسم", amount: r[3]||0 })
-                });
+                await fetch(`${DB}/Bills/${type}/${r[1]}/${r[2]}.json`, { method: "PUT", body: JSON.stringify({ customerName: r[4]||"بدون اسم", amount: r[3]||0 }) });
             }
-            alert("اكتمل الرفع");
-            location.reload();
+            alert("اكتمل الرفع"); location.reload();
         };
         reader.readAsArrayBuffer(file);
     }
@@ -212,55 +213,35 @@
     async function loadData(type) {
         const res = await fetch(`${DB}/Bills/${type}.json`);
         const data = await res.json();
-        const tbody = document.getElementById("tableBody");
-        tbody.innerHTML = "";
+        const tbody = document.getElementById("tableBody"); tbody.innerHTML = "";
         if(!data) return alert("لا توجد بيانات");
-        for(let branch in data) {
-            for(let id in data[branch]) {
-                tbody.innerHTML += `<tr><td>${branch}</td><td>${id}</td><td>${data[branch][id].customerName}</td><td>${data[branch][id].amount}</td></tr>`;
-            }
-        }
+        for(let branch in data) { for(let id in data[branch]) { tbody.innerHTML += `<tr><td>${branch}</td><td>${id}</td><td>${data[branch][id].customerName}</td><td>${data[branch][id].amount}</td></tr>`; } }
         show("tablePage");
     }
 
     function searchTable() {
         let v = document.getElementById("search").value.toLowerCase();
-        document.querySelectorAll("#tableBody tr").forEach(r => {
-            r.style.display = r.innerText.toLowerCase().includes(v) ? "" : "none";
-        });
+        document.querySelectorAll("#tableBody tr").forEach(r => { r.style.display = r.innerText.toLowerCase().includes(v) ? "" : "none"; });
     }
 
-    async function deleteAll() {
-        if(confirm("سيتم حذف كل البيانات نهائياً! هل أنت متأكد؟")) {
-            await fetch(`${DB}/Bills.json`, { method: "DELETE" });
-            alert("تم التطهير");
-        }
-    }
+    async function deleteAll() { if(confirm("سيتم حذف كل البيانات؟")) { await fetch(`${DB}/Bills.json`, { method: "DELETE" }); alert("تم المسح"); } }
 
     async function saveShop() {
-        const n = document.getElementById("shopName").value;
-        const p = document.getElementById("shopPhone").value;
+        const n = document.getElementById("shopName").value, p = document.getElementById("shopPhone").value;
         if(!n) return;
-        await fetch(`${DB}/PaymentLocations/${Date.now()}.json`, {
-            method: "PUT", body: JSON.stringify({ name: n, phone: p })
-        });
+        await fetch(`${DB}/PaymentLocations/${Date.now()}.json`, { method: "PUT", body: JSON.stringify({ name: n, phone: p }) });
         loadShops();
     }
 
     async function loadShops() {
         const res = await fetch(`${DB}/PaymentLocations.json`);
         const data = await res.json();
-        const list = document.getElementById("shopsList");
-        list.innerHTML = "";
-        for(let id in data) {
-            list.innerHTML += `<div class="shop-item"><b>${data[id].name}</b> - ${data[id].phone} 
-            <button class="red" style="width:60px; padding:5px; font-size:12px;" onclick="deleteShop('${id}')">حذف</button></div>`;
-        }
+        const list = document.getElementById("shopsList"); list.innerHTML = "";
+        for(let id in data) { list.innerHTML += `<div class="user-item"><b>${data[id].name}</b> - ${data[id].phone} <button class="red" style="width:60px;" onclick="deleteShop('${id}')">حذف</button></div>`; }
     }
 
-    async function deleteShop(id) {
-        if(confirm("حذف المحل؟")) { await fetch(`${DB}/PaymentLocations/${id}.json`, {method:"DELETE"}); loadShops(); }
-    }
+    async function deleteShop(id) { if(confirm("حذف؟")) { await fetch(`${DB}/PaymentLocations/${id}.json`, {method:"DELETE"}); loadShops(); } }
 </script>
 </body>
 </html>
+
